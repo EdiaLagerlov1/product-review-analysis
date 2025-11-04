@@ -1,0 +1,38 @@
+data:
+  num_sentences_per_category: 200
+  word_range: [10, 15]
+  categories:
+    - name: "Positive"
+      rating: 5
+    - name: "Neutral"
+      rating: 3
+    - name: "Negative"
+      rating: 1
+
+vectorization:
+  method: "word2vec"
+  max_features: 1000
+  vector_size: 100
+
+normalization:
+  method: "l2"
+
+kmeans:
+  n_clusters: 3
+  random_state: 42
+  max_iter: 300
+
+knn:
+  n_neighbors: 5
+  metric: "euclidean"
+
+visualization:
+  dimensionality_reduction: "pca"
+  figure_size: [12, 8]
+  save_plots: true
+  output_dir: "outputs/plots"
+
+paths:
+  data_dir: "outputs/data"
+  plots_dir: "outputs/plots"
+  reports_dir: "outputs/reports"

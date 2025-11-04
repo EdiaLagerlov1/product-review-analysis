@@ -1,0 +1,88 @@
+"""KNN visualization utilities."""
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from pathlib import Path
+from src.utils.logger import LoggerMixin
+
+
+class KNNPlotter(LoggerMixin):
+    """Visualize KNN classification results."""
+
+    def __init__(self, output_dir: str = "outputs/plots", figsize: tuple = (12, 8)):
+        """Initialize KNN plotter."""
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.figsize = figsize
+
+    def _reduce_dimensions(self, X: np.ndarray, method: str):
+        """Reduce dimensions for visualization."""
+        if method == 'tsne':
+            return TSNE(n_components=2, random_state=42).fit_transform(X)
+        return PCA(n_components=2, random_state=42).fit_transform(X)
+
+    def plot_knn_results(self, X: np.ndarray, y_true: np.ndarray,
+                        y_pred: np.ndarray, method: str = 'pca',
+                        filename: str = 'knn_results.png'):
+        """Plot KNN classification results."""
+        self.logger.info("Plotting KNN classification results")
+        X_reduced = self._reduce_dimensions(X, method)
+
+        colors = ['red', 'green', 'blue']
+        labels_text = ['Negative', 'Neutral', 'Positive']
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(self.figsize[0], self.figsize[1] // 1.5))
+
+        for i in np.unique(y_true):
+            mask = y_true == i
+            ax1.scatter(X_reduced[mask, 0], X_reduced[mask, 1],
+                       c=colors[int(i)], label=labels_text[int(i)], alpha=0.8, s=15, edgecolors='black', linewidths=0.3)
+        ax1.set_title('True Labels')
+        ax1.set_xlabel(f'{method.upper()} Component 1')
+        ax1.set_ylabel(f'{method.upper()} Component 2')
+        ax1.grid(True, alpha=0.3)
+        ax1.legend()
+
+        for i in np.unique(y_pred):
+            mask = y_pred == i
+            ax2.scatter(X_reduced[mask, 0], X_reduced[mask, 1],
+                       c=colors[int(i)], label=labels_text[int(i)], alpha=0.8, s=15, edgecolors='black', linewidths=0.3)
+        ax2.set_title('KNN Predictions')
+        ax2.set_xlabel(f'{method.upper()} Component 1')
+        ax2.set_ylabel(f'{method.upper()} Component 2')
+        ax2.grid(True, alpha=0.3)
+        ax2.legend()
+
+        plt.tight_layout()
+        filepath = self.output_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        self.logger.info(f"Saved KNN results plot to {filepath}")
+
+    def plot_misclassifications(self, X: np.ndarray, y_true: np.ndarray,
+                               y_pred: np.ndarray, method: str = 'tsne',
+                               filename: str = 'knn_misclassifications.png'):
+        """Plot misclassified samples."""
+        self.logger.info("Plotting misclassifications")
+        X_reduced = self._reduce_dimensions(X, method)
+
+        correct = y_true == y_pred
+        misclassified = ~correct
+
+        plt.figure(figsize=self.figsize)
+        plt.scatter(X_reduced[correct, 0], X_reduced[correct, 1],
+                   c='green', alpha=0.3, s=50, label='Correct')
+        plt.scatter(X_reduced[misclassified, 0], X_reduced[misclassified, 1],
+                   c='red', alpha=0.8, s=100, marker='X', label='Misclassified')
+
+        plt.title('KNN Misclassifications')
+        plt.xlabel(f'{method.upper()} Component 1')
+        plt.ylabel(f'{method.upper()} Component 2')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+
+        filepath = self.output_dir / filename
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+        self.logger.info(f"Saved misclassifications plot to {filepath}")

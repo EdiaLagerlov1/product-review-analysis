@@ -46,8 +46,8 @@ class ComparisonPlotter(LoggerMixin):
         for i in np.unique(y_pred):
             mask = y_pred == i
             ax2.scatter(X_reduced[mask, 0], X_reduced[mask, 1],
-                       c=colors[int(i)], label=f'Cluster {int(i)}', alpha=0.8, s=15, edgecolors='black', linewidths=0.3)
-        ax2.set_title('Predicted Cluster Labels')
+                       c=colors[int(i)], label=labels_text[int(i)], alpha=0.8, s=15, edgecolors='black', linewidths=0.3)
+        ax2.set_title('K-means Predictions')
         ax2.set_xlabel(f'{method.upper()} Component 1')
         ax2.set_ylabel(f'{method.upper()} Component 2')
         ax2.grid(True, alpha=0.3)

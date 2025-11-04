@@ -69,12 +69,13 @@ class Pipeline:
         true_labels = df_original['category'].map(labels_map).values
         cluster_labels = self.kmeans.fit_predict(vectors_normalized)
         cluster_results = self.cluster_analyzer.analyze(vectors_normalized, true_labels, cluster_labels)
+        cluster_labels_relabeled = cluster_results['relabeled_predictions']
         deviation_results = self.deviation_analyzer.analyze_deviation(
-            vectors_normalized, cluster_labels, true_labels)
+            vectors_normalized, cluster_labels_relabeled, true_labels)
         dim_method = self.config.get('visualization.dimensionality_reduction')
-        self.cluster_plotter.plot_clusters_2d(vectors_normalized, cluster_labels, method=dim_method,
+        self.cluster_plotter.plot_clusters_2d(vectors_normalized, cluster_labels_relabeled, method=dim_method,
                                              title='K-means Clusters', filename='01_kmeans_clusters.png')
-        self.comparison_plotter.plot_side_by_side(vectors_normalized, true_labels, cluster_labels, filename='02_original_vs_predicted.png')
+        self.comparison_plotter.plot_side_by_side(vectors_normalized, true_labels, cluster_labels_relabeled, filename='02_original_vs_predicted.png')
         self.metrics_plotter.plot_confusion_matrix(np.array(cluster_results['confusion_matrix']), labels=['Neg', 'Neu', 'Pos'],
                                                    title='K-means Confusion Matrix', filename='03_confusion_matrix_kmeans.png')
         self.synthetic_gen.analyze_clusters(df_original, cluster_labels, true_labels)
@@ -96,8 +97,10 @@ class Pipeline:
 
     def _save_reports(self, cluster_results, deviation_results, knn_results):
         """Save analysis reports."""
+        # Remove non-serializable items before saving
+        cluster_results_json = {k: v for k, v in cluster_results.items() if k != 'relabeled_predictions'}
         with open(self.reports_dir / 'kmeans_analysis.json', 'w') as f:
-            json.dump(cluster_results, f, indent=2)
+            json.dump(cluster_results_json, f, indent=2)
         with open(self.reports_dir / 'deviation_analysis.json', 'w') as f:
             json.dump(deviation_results, f, indent=2)
         with open(self.reports_dir / 'knn_analysis.json', 'w') as f:

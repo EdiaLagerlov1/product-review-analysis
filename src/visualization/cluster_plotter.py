@@ -45,11 +45,12 @@ class ClusterPlotter(LoggerMixin):
         X_reduced = reducer.fit_transform(X)
 
         colors = ['red', 'green', 'blue']
+        label_names = ['Negative', 'Neutral', 'Positive']
         plt.figure(figsize=self.figsize)
         for i in np.unique(labels):
             mask = labels == i
             plt.scatter(X_reduced[mask, 0], X_reduced[mask, 1],
-                       c=colors[int(i)], label=f'Cluster {int(i)}', alpha=0.8, s=15, edgecolors='black', linewidths=0.3)
+                       c=colors[int(i)], label=label_names[int(i)], alpha=0.8, s=15, edgecolors='black', linewidths=0.3)
         plt.legend()
         plt.title(title)
         plt.xlabel(f'{method.upper()} Component 1')

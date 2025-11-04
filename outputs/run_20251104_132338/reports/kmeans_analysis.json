@@ -1,0 +1,33 @@
+{
+  "metrics": {
+    "adjusted_rand_index": 0.24022877534228723,
+    "normalized_mutual_info": 0.27657015675971497
+  },
+  "confusion_matrix": [
+    [
+      71,
+      2,
+      27
+    ],
+    [
+      1,
+      59,
+      40
+    ],
+    [
+      17,
+      22,
+      61
+    ]
+  ],
+  "cluster_distribution": {
+    "0": 89,
+    "1": 83,
+    "2": 128
+  },
+  "true_distribution": {
+    "0": 100,
+    "1": 100,
+    "2": 100
+  },
+  "relabeled_predictions": 

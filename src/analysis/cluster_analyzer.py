@@ -12,6 +12,28 @@ class ClusterAnalyzer(LoggerMixin):
         """Initialize cluster analyzer."""
         self.results = {}
 
+    def map_clusters_to_labels(self, y_true: np.ndarray,
+                               y_pred: np.ndarray) -> np.ndarray:
+        """Map cluster IDs to semantic labels based on majority voting.
+
+        Args:
+            y_true: True labels (0=Negative, 1=Neutral, 2=Positive)
+            y_pred: Predicted cluster IDs
+
+        Returns:
+            Relabeled predictions with semantic labels
+        """
+        mapping = {}
+        for cluster in np.unique(y_pred):
+            cluster_mask = y_pred == cluster
+            cluster_true_labels = y_true[cluster_mask]
+            most_common_label = np.bincount(cluster_true_labels).argmax()
+            mapping[cluster] = most_common_label
+
+        self.logger.info(f"Cluster to label mapping: {mapping}")
+        relabeled = np.array([mapping[cluster] for cluster in y_pred])
+        return relabeled
+
     def analyze(self, X: np.ndarray, y_true: np.ndarray,
                 y_pred: np.ndarray) -> Dict[str, Any]:
         """Analyze clustering results.
@@ -26,12 +48,15 @@ class ClusterAnalyzer(LoggerMixin):
         """
         self.logger.info("Analyzing clustering performance")
 
-        metrics = calculate_clustering_metrics(X, y_true, y_pred)
-        conf_matrix = get_confusion_matrix(y_true, y_pred)
+        # Relabel clusters to semantic labels
+        y_pred_relabeled = self.map_clusters_to_labels(y_true, y_pred)
+
+        metrics = calculate_clustering_metrics(X, y_true, y_pred_relabeled)
+        conf_matrix = get_confusion_matrix(y_true, y_pred_relabeled)
 
         cluster_distribution = {
-            int(i): int(np.sum(y_pred == i))
-            for i in np.unique(y_pred)
+            int(i): int(np.sum(y_pred_relabeled == i))
+            for i in np.unique(y_pred_relabeled)
         }
 
         true_distribution = {
@@ -46,8 +71,12 @@ class ClusterAnalyzer(LoggerMixin):
             'true_distribution': true_distribution
         }
 
+        # Store relabeled predictions separately (not in JSON results)
+        self._relabeled_predictions = y_pred_relabeled
+
         self.logger.info(f"Clustering metrics: {metrics}")
-        return self.results
+        # Return results with relabeled predictions for pipeline use
+        return {**self.results, 'relabeled_predictions': y_pred_relabeled}
 
     def get_misclassified_samples(self, y_true: np.ndarray,
                                   y_pred: np.ndarray) -> np.ndarray:

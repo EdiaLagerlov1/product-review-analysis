@@ -52,7 +52,7 @@ A machine learning system demonstrating **unsupervised clustering (K-means)** vs
 - **`kmeans_model.py`** (88 lines)
   - Execute K-means clustering (k=3)
   - Fit and predict methods
-  - Return cluster assignments
+  - Return cluster assignments (0, 1, 2)
   - Works on 100D Word2Vec vectors
 
 - **`knn_model.py`** (86 lines)
@@ -69,8 +69,10 @@ A machine learning system demonstrating **unsupervised clustering (K-means)** vs
 #### 1.4 Analysis Layer (`src/analysis/`)
 - **`cluster_analyzer.py`** (99 lines)
   - Compare K-means results to ground truth labels
+  - **Automatic semantic label mapping** (Negative/Neutral/Positive)
+  - Uses majority voting to map cluster IDs to labels
   - Calculate metrics: ARI, NMI
-  - Generate confusion matrix
+  - Generate confusion matrix with semantic labels
   - Cluster distribution analysis
 
 - **`deviation_analyzer.py`** (43 lines)
@@ -88,13 +90,15 @@ A machine learning system demonstrating **unsupervised clustering (K-means)** vs
 #### 1.5 Visualization Layer (`src/visualization/`)
 - **`cluster_plotter.py`** (98 lines)
   - Visualize K-means clusters using **PCA** (2D projection)
-  - Discrete colors: Red (Cluster 0), Green (Cluster 1), Blue (Cluster 2)
+  - Discrete colors: Red (Negative), Green (Neutral), Blue (Positive)
+  - Shows semantic labels instead of cluster IDs
   - Small dots (s=15) with black edges
   - Single plot type per function
 
 - **`comparison_plotter.py`** (77 lines)
   - Compare ground truth labels vs K-means predictions
-  - Side-by-side visualization
+  - Side-by-side visualization with semantic labels
+  - Both panels use Negative/Neutral/Positive labels
   - Same PCA projection for both panels
 
 - **`knn_plotter.py`** (82 lines)
@@ -130,13 +134,14 @@ Main pipeline orchestrator that:
 2. Vectorize using Word2Vec (100D)
 3. Normalize using L2
 4. Run K-means clustering
-5. Analyze K-means performance (ARI, NMI, confusion matrix)
-6. Generate synthetic sentences based on clusters
-7. Run KNN on original sentences
-8. Analyze KNN performance (accuracy, precision, recall, CV)
-9. Generate all visualizations (5 plots)
-10. Export results to timestamped directory
-11. **No silhouette analysis** (removed)
+5. **Map clusters to semantic labels** (Negative/Neutral/Positive)
+6. Analyze K-means performance (ARI, NMI, confusion matrix)
+7. Generate synthetic sentences based on clusters
+8. Run KNN on original sentences
+9. Analyze KNN performance (accuracy, precision, recall, CV)
+10. Generate all visualizations (5 plots) with semantic labels
+11. Export results to timestamped directory
+12. **No silhouette analysis** (removed)
 
 ### 3. Entry Points
 
@@ -245,40 +250,56 @@ outputs/
 ## Key Metrics to Track
 
 ### K-means Analysis (Unsupervised)
-- **Adjusted Rand Index (ARI)**: 0.5465 (moderate clustering quality)
-- **Normalized Mutual Information (NMI)**: 0.5820 (moderate information gain)
-- **Mismatch Rate**: 89.5% (misleading - doesn't account for label permutations)
-- **Accuracy after relabeling**: 82.8% (497/600 correct)
-- **Inertia**: 0.0704 (very tight clusters)
-- **Confusion matrix**: Shows cluster-to-label mapping
+- **Adjusted Rand Index (ARI)**: 0.7066 (good clustering quality)
+- **Normalized Mutual Information (NMI)**: 0.7121 (good information gain)
+- **Accuracy with semantic labels**: 89.67% (538/600 correct)
+- **Automatic label mapping**: Clusters mapped to Negative/Neutral/Positive
+- **Confusion matrix**: Shows semantic label predictions
+
+**Confusion Matrix (Semantic Labels):**
+```
+                Negative  Neutral  Positive
+Negative            167        0        33
+Neutral               0      174        26
+Positive              0        3       197
+```
 
 ### KNN Analysis (Supervised)
-- **Training Accuracy**: 98.67% (592/600 correct)
-- **Precision**: 98.69% (very few false positives)
-- **Recall**: 98.67% (finds almost all instances)
-- **F1 Score**: 98.66% (balanced performance)
-- **Cross-validation**: 95.67% ± 1.62% (5-fold, stable)
-- **Confusion matrix**: 8 total errors
+- **Training Accuracy**: 99.00% (594/600 correct)
+- **Precision**: 99.02% (very few false positives)
+- **Recall**: 99.00% (finds almost all instances)
+- **F1 Score**: 99.00% (balanced performance)
+- **Cross-validation**: 96.67% ± 1.39% (5-fold, stable)
+- **Confusion matrix**: 6 total errors
+
+**Confusion Matrix:**
+```
+                Negative  Neutral  Positive
+Negative            200        0         0
+Neutral               1      199         0
+Positive              4        1       195
+```
 
 ### Performance Comparison
-- **K-means**: 82.8% accuracy (no labels needed)
-- **KNN**: 98.67% accuracy (requires labeled training data)
-- **Improvement**: +15.9% accuracy with supervised learning
+- **K-means**: 89.67% accuracy (no labels needed, automatic semantic mapping)
+- **KNN**: 99.00% accuracy (requires labeled training data)
+- **Improvement**: +9.33% accuracy with supervised learning
 
 ## Key Performance Results
 
 ### With Word2Vec (Current)
-- **K-means ARI**: 0.5465 (moderate-to-good clustering)
-- **KNN Accuracy**: 98.67% (near-perfect classification)
+- **K-means ARI**: 0.7066 (good clustering quality)
+- **K-means Accuracy**: 89.67% (with automatic semantic labels)
+- **KNN Accuracy**: 99.00% (near-perfect classification)
 - **Vector Dimensions**: 100 (dense, semantic)
 - **Sentence Diversity**: 100% unique (word-combination based)
 
 ### With TF-IDF (Not Recommended)
-- **K-means ARI**: 0.02 (almost random - 27× worse)
+- **K-means ARI**: 0.02 (almost random - 35× worse)
 - **KNN Accuracy**: 100% (unrealistic - overfitting to templates)
 - **Vector Dimensions**: 804 (sparse, high-dimensional)
 
-**Conclusion**: Word2Vec dramatically improves K-means clustering while maintaining realistic KNN performance.
+**Conclusion**: Word2Vec dramatically improves K-means clustering (ARI 0.7066 vs 0.02) while maintaining realistic KNN performance.
 
 ## Dependencies
 
@@ -304,7 +325,8 @@ gensim>=4.3.0          # Word2Vec embeddings
 7. ✅ Timestamped outputs (no overwriting)
 8. ✅ Word2Vec embeddings (semantic understanding)
 9. ✅ Diverse sentence generation (100% unique)
-10. ✅ Realistic performance metrics (98.67% KNN, 82.8% K-means)
+10. ✅ Automatic semantic label mapping (Negative/Neutral/Positive)
+11. ✅ Realistic performance metrics (99.00% KNN, 89.67% K-means)
 
 ## Design Decisions
 
@@ -312,7 +334,7 @@ gensim>=4.3.0          # Word2Vec embeddings
 - **Semantic understanding**: "good" and "great" have similar vectors
 - **Fixed dimensions**: 100D regardless of vocabulary size
 - **Dense vectors**: All values non-zero (better for K-means)
-- **27× better K-means ARI**: 0.55 vs 0.02
+- **35× better K-means ARI**: 0.7066 vs 0.02
 
 ### Why PCA over t-SNE?
 - **Linear**: Preserves global structure
@@ -360,12 +382,13 @@ Vectorizing sentences using word2vec...
   Created 600 vectors with 100 features
 
 Running K-means clustering...
-  Adjusted Rand Index: 0.5465
-  Normalized Mutual Info: 0.5820
+  Adjusted Rand Index: 0.7066
+  Normalized Mutual Info: 0.7121
+  Accuracy: 89.67%
 
 Running KNN classification...
-  KNN Accuracy: 98.67%
-  Cross-validation Score: 95.67% (±1.62%)
+  KNN Accuracy: 99.00%
+  Cross-validation Score: 96.67% (±1.39%)
 
 Results saved to: outputs/run_20251104_000509/
 ```
